@@ -5,6 +5,7 @@ from pynput import keyboard
 import time
 from threading import Thread
 import tkinter as tk
+from dotenv import load_dotenv
 
 last_played = 0.0
 chain = []
@@ -80,8 +81,11 @@ def getSoundPaths(directory = "") -> list[str]:
     return sound_files
 
 def main() -> None:
+    load_dotenv()
     global size, sound_files
-    sound_files = getSoundPaths("sounds")
+
+    path = os.getenv("PATH")
+    sound_files = getSoundPaths(path)
     if len(sound_files) == 0:
         print("No files found.")
         return
