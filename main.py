@@ -3,23 +3,54 @@ from playsound import playsound
 from time import sleep
 from pynput import keyboard
 import time
-from threading import Thread, Event
+from threading import Thread
 import tkinter as tk
 
 last_played = 0.0
 chain = []
 windowThread = Thread()
+sound_files: list[str]
+soundthreads: list[Thread] = []
+size = 0
 
 def window() -> None:
+    global size, sound_files
     root = tk.Tk()
     root.title("Overlay UI")
     root.overrideredirect(True)
     root.attributes('-topmost', True)
-    root.attributes('-alpha', 0.7)
-    root.configure(bg='white')
-    root.geometry("200x100+100+100")  # width x height + x + y
-    root.bind("<Button-1>", lambda e: root.destroy())
-    root.bind("<Button-2>", lambda e: playsound("sounds/random-mp3.mp3"))
+    root.attributes('-alpha', 1.0)
+    root.configure(bg='black')
+    root.geometry(f"{root.winfo_screenwidth()}x{root.winfo_screenheight()}+0+0")
+
+    for row in range(size):
+        root.grid_rowconfigure(row, weight=1)
+
+        hasBroken = False
+        for column in range(size):
+            root.grid_columnconfigure(column, weight=1)
+            index = row * size + column
+            if index >= len(sound_files):
+                button = tk.Button(
+                root, 
+                text="Close", 
+                command= lambda: root.destroy(), 
+                bg='black', 
+                fg='cyan')
+                button.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
+                hasBroken = True
+                break
+            sound_path = sound_files[index]
+            button = tk.Button(
+                root, 
+                text=os.path.basename(sound_path).split(".")[0], 
+                command=lambda path=sound_path: Thread(target=playsound, args=(path,)).start(), 
+                bg='black', 
+                fg='cyan')
+            button.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
+        if hasBroken:
+            break
+
     root.mainloop()
 
 
@@ -34,15 +65,14 @@ def on_press(key) -> None:
         if keyboard.Key.ctrl in chain or keyboard.KeyCode.from_char('u') in chain:
             if not windowThread.is_alive():
                 windowThread = Thread(target=window)
-                windowThread.start()
-            
+                windowThread.start() 
         elif keyboard.Key.ctrl in chain or keyboard.KeyCode.from_char('m') in chain:
             return False
     
     chain.clear()
     last_played = time.time()
 
-def getSoundPaths(directory = "") -> list:
+def getSoundPaths(directory = "") -> list[str]:
     sound_files = []
     for file in os.listdir(directory):
         if file.endswith(".wav") or file.endswith(".mp3"):
@@ -50,11 +80,17 @@ def getSoundPaths(directory = "") -> list:
     return sound_files
 
 def main() -> None:
-    sound_files: list = getSoundPaths("sounds")
+    global size, sound_files
+    sound_files = getSoundPaths("sounds")
     if len(sound_files) == 0:
         print("No files found.")
         return
     
+    for i in range(1, len(sound_files) + 2):
+        if pow(i, 2) > len(sound_files):
+            size = i
+            break    
+
     with keyboard.Listener(on_press=on_press) as listener:
         listener.join()
         
