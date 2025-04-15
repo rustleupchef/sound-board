@@ -13,8 +13,8 @@ windowThread = Thread()
 sound_files: list[str]
 soundthreads: list[Thread] = []
 size = 0
-backgroundColor = "black"
-foregroundColor = "cyan"
+backgroundColor: str
+foregroundColor: str
 
 def window() -> None:
     global size, sound_files
