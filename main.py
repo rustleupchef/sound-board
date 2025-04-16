@@ -1,6 +1,5 @@
 import os
 from playsound import playsound
-from time import sleep
 from pynput import keyboard
 import time
 from threading import Thread
