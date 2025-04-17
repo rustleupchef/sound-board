@@ -1,10 +1,11 @@
 import os
-from playsound import playsound
 from pynput import keyboard
 import time
 from threading import Thread
 import tkinter as tk
 from dotenv import load_dotenv, find_dotenv
+import sounddevice as sd
+import soundfile as sf
 
 last_played = 0.0
 chain = []
@@ -14,6 +15,15 @@ soundthreads: list[Thread] = []
 size = 0
 backgroundColor: str
 foregroundColor: str
+virtualMic: str
+
+def psound(path: str) -> None:
+    try:
+        data, rate = sf.read(path)
+        sd.play(data, rate, device="default")
+        sd.wait()
+    except:
+        pass
 
 def window() -> None:
     global size, sound_files
@@ -46,7 +56,7 @@ def window() -> None:
             button = tk.Button(
                 root, 
                 text=os.path.basename(sound_path).split(".")[0], 
-                command=lambda path=sound_path: Thread(target=playsound, args=(path,)).start(), 
+                command=lambda path=sound_path: Thread(target=psound, args=(path,)).start(), 
                 bg=backgroundColor, 
                 fg=foregroundColor)
             button.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
@@ -82,11 +92,12 @@ def getSoundPaths(directory = "") -> list[str]:
     return sound_files
 
 def main() -> None:
-    global size, sound_files, backgroundColor, foregroundColor
+    global size, sound_files, backgroundColor, foregroundColor, virtualMic
     load_dotenv(find_dotenv())
     path = os.getenv("SOUND_PATH")
     foregroundColor = os.getenv("FOREGROUND_COLOR")
     backgroundColor = os.getenv("BACKGROUND_COLOR")
+    virtualMic = os.getenv("VIRTUAL_MIC")
 
     sound_files = getSoundPaths(path)
     if len(sound_files) == 0:
