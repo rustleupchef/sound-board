@@ -10,13 +10,23 @@ import soundfile as sf
 
 last_played = 0.0
 chain = []
+
 windowThread = Thread()
 sound_files: list[str]
 soundthreads: list[Thread] = []
 size = 0
+
 backgroundColor: str
-foregroundColor: str
+btnBackgroundColor: str
+btnForegroundColor: str
+
 virtualMic: str
+
+def handleSoundThread(sound_path: str) -> None:
+    global soundthreads
+    soundThread = Thread(target=psound, args=(sound_path,))
+    soundthreads.append(soundThread)
+    soundThread.start()
 
 def psound(path: str) -> None:
     if virtualMic == "" or virtualMic is None:
@@ -30,13 +40,13 @@ def psound(path: str) -> None:
         pass
 
 def window() -> None:
-    global size, sound_files
+    global size, sound_files, soundthreads
     root = tk.Tk()
     root.title("Overlay UI")
     root.overrideredirect(True)
     root.attributes('-topmost', True)
     root.attributes('-alpha', 1.0)
-    root.configure(bg='black')
+    root.configure(bg=backgroundColor)
     root.geometry(f"{root.winfo_screenwidth()}x{root.winfo_screenheight()}+0+0")
 
     for row in range(size):
@@ -51,8 +61,8 @@ def window() -> None:
                 root, 
                 text="Close", 
                 command= lambda: root.destroy(), 
-                bg=backgroundColor, 
-                fg=foregroundColor)
+                bg=btnBackgroundColor, 
+                fg=btnForegroundColor)
                 button.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
                 hasBroken = True
                 break
@@ -60,9 +70,9 @@ def window() -> None:
             button = tk.Button(
                 root, 
                 text=os.path.basename(sound_path).split(".")[0], 
-                command=lambda path=sound_path: Thread(target=psound, args=(path,)).start(), 
-                bg=backgroundColor, 
-                fg=foregroundColor)
+                command=lambda path=sound_path: handleSoundThread(path), 
+                bg=btnBackgroundColor, 
+                fg=btnForegroundColor)
             button.grid(row=row, column=column, padx=5, pady=5, sticky="nsew")
         if hasBroken:
             break
@@ -83,6 +93,9 @@ def on_press(key) -> None:
                 windowThread = Thread(target=window)
                 windowThread.start() 
         elif keyboard.Key.ctrl in chain or keyboard.KeyCode.from_char('m') in chain:
+            for thread in soundthreads:
+                if thread.is_alive():
+                    thread.join()
             return False
     
     chain.clear()
@@ -96,11 +109,12 @@ def getSoundPaths(directory = "") -> list[str]:
     return sound_files
 
 def main() -> None:
-    global size, sound_files, backgroundColor, foregroundColor, virtualMic
+    global size, sound_files, backgroundColor, btnBackgroundColor, btnForegroundColor, virtualMic
     load_dotenv(find_dotenv())
     path = os.getenv("SOUND_PATH")
-    foregroundColor = os.getenv("FOREGROUND_COLOR")
     backgroundColor = os.getenv("BACKGROUND_COLOR")
+    btnForegroundColor = os.getenv("BTN_FOREGROUND_COLOR")
+    btnBackgroundColor = os.getenv("BTN_BACKGROUND_COLOR")
     virtualMic = os.getenv("VIRTUAL_MIC")
 
     sound_files = getSoundPaths(path)
