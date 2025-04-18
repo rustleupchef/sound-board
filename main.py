@@ -96,6 +96,7 @@ def on_press(key) -> None:
             for thread in soundthreads:
                 if thread.is_alive():
                     thread.join()
+            windowThread.join()
             return False
     
     chain.clear()
