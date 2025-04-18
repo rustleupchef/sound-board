@@ -1,4 +1,5 @@
 import os
+from playsound import playsound
 from pynput import keyboard
 import time
 from threading import Thread
@@ -18,9 +19,12 @@ foregroundColor: str
 virtualMic: str
 
 def psound(path: str) -> None:
+    if virtualMic == "" or virtualMic is None:
+        playsound(path)
+        return
     try:
         data, rate = sf.read(path)
-        sd.play(data, rate, device="default")
+        sd.play(data, rate, device=virtualMic)
         sd.wait()
     except:
         pass
